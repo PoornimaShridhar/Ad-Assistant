@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.adv/
+adv/
+.env
+.DS_Store
+data/app.db
+client_secret.json
