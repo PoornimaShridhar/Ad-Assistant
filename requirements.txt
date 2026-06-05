@@ -1,0 +1,8 @@
+gradio>=5.0.0
+sqlalchemy      # for wat is this ?
+google-ads>=27.0.0
+pandas
+llama-cpp-python==0.2.90
+pytest
+python-dotenv
+requests
