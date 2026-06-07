@@ -8,7 +8,8 @@ from app.ads1.ads_queries import (
     HOURLY_QUERY,
     GEO_QUERY,
     SEARCH_TERMS_QUERY,
-    KEYWORDS_QUERY
+    KEYWORDS_QUERY,
+    RECOMMENDATIONS_QUERY,
 )
 
 def run_query(client, customer_id, query):
@@ -49,13 +50,17 @@ def fetch_all_data(customer_id):
     print("🔄 Fetching keywords...")
     keywords = execute(KEYWORDS_QUERY)
 
+    print("🔄 Fetching recommendations...")
+    recommendations = execute(RECOMMENDATIONS_QUERY)
+
     return {
         "campaigns": campaigns,
         "devices": devices,
         "hourly": hourly,
         "geo": geo,
         "search_terms": search_terms,
-        "keywords": keywords
+        "keywords": keywords,
+        "recommendations": recommendations
     }
 
 
@@ -131,6 +136,15 @@ def to_dataframes(raw_data):
         "conversions": r.metrics.conversions
     }
     for r in raw_data["keywords"]
+])
+    
+    dfs["recommendations"] = pd.DataFrame([
+    {
+        "type": r.recommendation.type.name,
+        "resource_name": r.recommendation.resource_name,
+        "campaign": r.recommendation.campaign
+    }
+    for r in raw_data["recommendations"]
 ])
 
     return dfs

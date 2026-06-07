@@ -65,3 +65,11 @@ SELECT
 FROM keyword_view
 WHERE segments.date DURING LAST_30_DAYS
 """
+
+RECOMMENDATIONS_QUERY = """
+SELECT
+  recommendation.type,
+  recommendation.resource_name,
+  recommendation.campaign
+FROM recommendation
+"""
