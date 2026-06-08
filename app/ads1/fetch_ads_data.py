@@ -76,7 +76,8 @@ def to_dataframes(raw_data):
             "impressions": r.metrics.impressions,
             "clicks": r.metrics.clicks,
             "cost": r.metrics.cost_micros / 1e6,
-            "ctr": r.metrics.ctr
+            "ctr": r.metrics.ctr,
+            "conversions": r.metrics.conversions or 0 
         }
         for r in raw_data["campaigns"]
     ])
@@ -129,11 +130,16 @@ def to_dataframes(raw_data):
     # Keywords
     dfs["keywords"] = pd.DataFrame([
     {
-        "keyword": r.ad_group_criterion.keyword.text,
+        "campaign_id": r.campaign.id,
+        "campaign_name": r.campaign.name,
+        "ad_group_id": r.ad_group.id if r.ad_group else None,
+        "ad_group_name": r.ad_group.name if r.ad_group else None,
+        "keyword": r.ad_group_criterion.keyword.text if r.ad_group_criterion.keyword else None,
         "clicks": r.metrics.clicks,
         "impressions": r.metrics.impressions,
         "cost": r.metrics.cost_micros / 1e6,
-        "conversions": r.metrics.conversions
+        "conversions": r.metrics.conversions,
+        "ctr": r.metrics.ctr,
     }
     for r in raw_data["keywords"]
 ])

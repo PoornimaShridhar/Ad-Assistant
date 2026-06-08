@@ -57,6 +57,10 @@ WHERE segments.date DURING LAST_30_DAYS
 
 KEYWORDS_QUERY = """
 SELECT
+  campaign.id,
+  campaign.name,
+  ad_group.id,
+  ad_group.name,
   ad_group_criterion.keyword.text,
   metrics.impressions,
   metrics.clicks,
