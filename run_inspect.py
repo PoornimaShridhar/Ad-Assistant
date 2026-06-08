@@ -1,5 +1,5 @@
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
 from app.ads1.connector import list_campaigns, get_campaign_metrics
 import pandas as pd
 import os

@@ -1,5 +1,7 @@
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
+
+import os
 
 from app.ads1.fetch_ads_data import fetch_all_data, to_dataframes
 import os

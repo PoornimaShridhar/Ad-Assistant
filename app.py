@@ -1,6 +1,10 @@
 import gradio as gr
 import pandas as pd
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
+# load_dotenv()
+
+# becoz of deployment on hf space - above 2 lines replaced as below:
+import os
 
 from app.db.repo import init_db
 from app.ui.dashboard import load_dashboard, build_dashboard
@@ -9,7 +13,7 @@ from app.controller.session_loader import load_google_ads_data
 from app.ads1.ads_analyst import run_ads_analyst_card
 from app.ads1.budget_optimizer import run_budget_optimizer_card
 
-load_dotenv()
+
 init_db()
 
 # HELPERS
