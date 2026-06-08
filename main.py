@@ -1,110 +1,99 @@
 import gradio as gr
 import pandas as pd
-from app.db.repo import init_db
-from app.recs.generate import generate_explanation
-from app.ui.dashboard import load_dashboard, build_dashboard
-
 from dotenv import load_dotenv
-load_dotenv()
 
+from app.db.repo import init_db
+from app.ui.dashboard import load_dashboard, build_dashboard
+from app.controller.session_loader import load_google_ads_data
+
+from app.ads1.ads_analyst import run_ads_analyst_card
+from app.ads1.budget_optimizer import run_budget_optimizer_card
+
+load_dotenv()
 init_db()
 
-# STREAM WRAPPER (UNCHANGED LOGIC, JUST CLEAN)
-# def stream_to_gradio(rec):
-#     print("🔥 STREAM FUNCTION CALLED")
-#     full_text = ""
-#     for chunk in generate_explanation(rec, stream=True):
-#         full_text = chunk
-#         print("CHUNK:", chunk)
+# HELPERS
+def on_campaign_select(campaign_name):
+    dfs = load_google_ads_data()
 
-#     final_text = full_text.replace("<think>", "").strip()
-#     if not final_text:
-#         final_text = "No explanation was generated."
-#     yield final_text
+    filtered = dfs.copy()
+    filtered["campaigns"] = dfs["campaigns"][
+        dfs["campaigns"]["name"] == campaign_name
+    ]
+    return filtered
 
-def get_latest_rec():
-    from app.db.repo import SessionLocal
-    from app.db.models import Recommendation
+def run_ads_card(state):
+    if not state:
+        return "⚠️ Please select a campaign from the Dashboard first."
+    return run_ads_analyst_card(state["dfs"])
 
-    session = SessionLocal()
-    rec = session.query(Recommendation).order_by(Recommendation.id.desc()).first()
+def run_budget_card(state):
+    if not state:
+        return "⚠️ Please select a campaign from the Dashboard first."
+    return run_budget_optimizer_card(state["dfs"])
 
-    if not rec:
-        return {}
+def campaign_row_selected(evt: gr.SelectData):
+    """
+    Triggered when user clicks a row in the dashboard table
+    """
 
-    return {
-        "campaign_id": rec.campaign_id,
-        "type": rec.recommendation_type,
-        "action": rec.action,
-        "reason": rec.reason,
-        "status": rec.status,
-    }
+    df = load_dashboard()[4]  # campaign table returned by load_dashboard()
+    campaign_name = df.iloc[evt.index[0]]["Campaign"]
+    dfs = on_campaign_select(campaign_name)
 
-# LOAD RECOMMENDATIONS
-def load_recs():
-    from app.db.repo import SessionLocal
-    from app.db.models import Recommendation
-
-    session = SessionLocal()
-    recs = session.query(Recommendation).all()
-
-    # return [[r.campaign_id, r.action, r.status] for r in recs]
-    df = pd.DataFrame([
+    return (
         {
-            "Campaign ID": r.campaign_id,
-            "Recommendation": r.recommendation_type,
-            "Action": r.action,
-            "Reason": r.reason,
-            "Status": r.status,
-        }
-        for r in recs
-    ])
-
-    return df
+            "campaign_name": campaign_name,
+            "dfs": dfs
+        },
+        f"## 📊 Selected Campaign: {campaign_name}"
+    )
 
 # GRADIO APP
 with gr.Blocks(title="Ads Assistant") as demo:
 
-    gr.Markdown("# Preschool Ads Dashboard")
+    campaign_state = gr.State()
+    gr.Markdown("# 🎯 Preschool Ads Dashboard")
 
-    # DASHBOARD TAB
-    with gr.Tab("Campaign Dashboard"):
-        build_dashboard()
+    # TAB 1: DASHBOARD
+    # -------------------------
+    with gr.Tab("Dashboard"):
 
-    # RECOMMENDATIONS TAB
-    with gr.Tab("Recommendations"):
+        campaign_table = build_dashboard()
 
-        rec_table = gr.Dataframe(label="Recommendations", interactive=False)
+    # TAB 2: CAMPAIGN ANALYSIS
+    # -------------------------
+    with gr.Tab("Campaign Analysis"):
 
-        btn2 = gr.Button("Load Recommendations")
-
-        btn2.click(
-            fn=load_recs,
-            outputs=rec_table
+        selected_campaign = gr.Markdown(
+            "👈 Select a campaign from the Dashboard tab"
         )
 
-    # MINI CPM STREAMING TAB
-    with gr.Tab("AI Explanation (MiniCPM)"):
+        analyst_btn = gr.Button("Run Ads Analysis")
+        budget_btn = gr.Button("Run Budget Optimization")
 
-        out = gr.Textbox(lines=10)
+        output = gr.Markdown()
 
-        rec_state = gr.State({
-            "campaign_id": "Test Campaign",
-            "type": "high_cpl",
-            "action": "reduce_budget",
-            "reason": "CPL too high",
-            "cpl": 42,
-            "target_cpl": 20,
-            "ctr": 1.2,
-        })
-
-        btn3 = gr.Button("Run Explanation")
-
-        btn3.click(
-            fn=lambda rec: generate_explanation(get_latest_rec(), stream=False),
-            inputs=None,   # ✅ FIXED (THIS WAS WRONG)
-            outputs=out,
-            show_progress=True
+        analyst_btn.click(
+            fn=run_ads_card,
+            inputs=campaign_state,
+            outputs=output
         )
+
+        budget_btn.click(
+            fn=run_budget_card,
+            inputs=campaign_state,
+            outputs=output
+        )
+
+    # CONNECT TABLE CLICK → STATE
+    # -------------------------
+    campaign_table.select(
+        fn=campaign_row_selected,
+        outputs=[
+            campaign_state,
+            selected_campaign
+        ]
+    )
 
 demo.launch()
